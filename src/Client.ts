@@ -7,7 +7,6 @@ import {Command, CommandRequirements, CommandContext} from './Command';
 import {EventListener, EventContext} from './EventListener';
 import defaultMessageListener from './defaultMessageListener';
 import {Resolves, makeArray} from './util';
-import * as deprecations from './deprecations';
 
 /** The options passed to the client constructor. Includes Eris options. */
 export interface ClientOptions extends Eris.ClientOptions {
@@ -30,13 +29,6 @@ export interface ClientOptions extends Eris.ClientOptions {
 	/** A set of requirements to check for all commands. */
 	globalCommandRequirements?: CommandRequirements;
 	/**
-	 * If true, requirements set via the globalCommandRequirements option will
-	 * be ignored.
-	 * @deprecated Pass no `globalCommandRequirements` client option instead.
-	 * See https://github.com/eritbh/yuuko/issues/89
-	*/
-	ignoreGlobalRequirements?: boolean;
-	/**
 	 * If true, the client does not respond to commands by default, and the user
 	 * must register their own `messageCreate` listener, which can call
 	 * `processCommand` to perform command handling at an arbitrary point during
@@ -44,13 +36,6 @@ export interface ClientOptions extends Eris.ClientOptions {
 	 */
 	disableDefaultMessageListener?: boolean;
 }
-
-/**
- * Information returned from the API about the bot's OAuth application.
- * @deprecated Use `Eris.OAuthApplicationInfo` instead. See
- * https://github.com/eritbh/yuuko/issues/91
- */
-export type ClientOAuthApplication = Eris.OAuthApplicationInfo;
 
 // A function that takes a message and a context argument and returns a prefix,
 // an array of prefixes, or void.
@@ -86,14 +71,6 @@ export class Client extends Eris.Client implements ClientOptions {
 	globalCommandRequirements: CommandRequirements = {};
 
 	/**
-	 * If true, requirements set via `setGlobalRequirements` will be ignored. Used
-	 * for debugging, probably shouldn't be used in production.
-	 * @deprecated Pass no `globalCommandRequirements` client option instead.
-	 * See https://github.com/eritbh/yuuko/issues/89
-	 */
-	ignoreGlobalRequirements: boolean = false;
-
-	/**
 	 * If true, the client does not respond to commands by default, and the user
 	 * must register their own `messageCreate` listener, which can call
 	 * `processCommand` to perform command handling at an arbitrary point during
@@ -123,7 +100,7 @@ export class Client extends Eris.Client implements ClientOptions {
 	mentionPrefixRegExp: RegExp | null = null;
 
 	/** Information about the bot's OAuth application. */
-	app: ClientOAuthApplication | null = null;
+	app: Eris.OAuthApplicationInfo | null = null;
 
 	/** An object of stuff to add to the context object for command functions */
 	contextAdditions: object = {};
@@ -145,10 +122,6 @@ export class Client extends Eris.Client implements ClientOptions {
 		if (options.allowMention !== undefined) this.allowMention = options.allowMention;
 		if (options.ignoreBots !== undefined) this.ignoreBots = options.ignoreBots;
 		if (options.globalCommandRequirements !== undefined) this.globalCommandRequirements = options.globalCommandRequirements;
-		if (options.ignoreGlobalRequirements !== undefined) {
-			deprecations.ignoreGlobalRequirements();
-			this.ignoreGlobalRequirements = options.ignoreGlobalRequirements;
-		}
 		if (options.disableDefaultMessageListener !== undefined) this.disableDefaultMessageListener = options.disableDefaultMessageListener;
 
 		// Warn if we're using an empty prefix
@@ -243,17 +216,6 @@ export class Client extends Eris.Client implements ClientOptions {
 	/** Adds things to the context objects the client sends. */
 	extendContext (options: object): this {
 		Object.assign(this.contextAdditions, options);
-		return this;
-	}
-
-	/**
-	 * Set requirements for all commands at once
-	 * @deprecated Use the `globalCommandRequirements` client option instead.
-	 * See https://github.com/eritbh/yuuko/issues/89
-	 */
-	setGlobalRequirements (requirements: CommandRequirements) {
-		deprecations.setGlobalRequirements();
-		Object.assign(this.globalCommandRequirements, requirements);
 		return this;
 	}
 
@@ -414,34 +376,6 @@ export class Client extends Eris.Client implements ClientOptions {
 	}
 
 	/**
-	 * Alias for `addDir`.
-	 * @deprecated Use `addDir` instead. See
-	 * https://github.com/eritbh/yuuko/issues/88
-	 */
-	addCommandDir (dirname: string): this {
-		deprecations.addCommandDir();
-		return this.addDir(dirname);
-	}
-
-	/**
-	 * Alias for `addFile`.
-	 * @deprecated Use `addFile` instead. See https://github.com/eritbh/yuuko/issues/88
-	 */
-	addCommandFile (filename: string): this {
-		deprecations.addCommandFile();
-		return this.addFile(filename);
-	}
-
-	/**
-	 * Alias for `reloadFiles()`.
-	 * @deprecated Use `reloadFiles` instead. See https://github.com/eritbh/yuuko/issues/88
-	 */
-	reloadCommands (): this {
-		deprecations.reloadCommands();
-		return this.reloadFiles();
-	}
-
-	/**
 	 * Checks the list of registered commands and returns one whch is known by a
 	 * given name. Passing an empty string will return the default command, if
 	 * any.
@@ -507,21 +441,6 @@ export class Client extends Eris.Client implements ClientOptions {
 		}
 		// we got nothing
 		return null;
-	}
-
-	/**
-	 * Alias of `prefix`.
-	 * @deprecated Use `prefix` instead.
-	 * See https://github.com/eritbh/yuuko/issues/90
-	 */
-	get defaultPrefix () {
-		deprecations.defaultPrefix();
-		return this.prefix;
-	}
-
-	set defaultPrefix (val: string) {
-		deprecations.defaultPrefix();
-		this.prefix = val;
 	}
 }
 
