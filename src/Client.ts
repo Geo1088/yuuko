@@ -59,7 +59,7 @@ export interface PrefixFunction {
 }
 
 /** The client. */
-export class Client extends Eris.Client implements ClientOptions {
+export class Client extends Eris.Client {
 	/** The token of the bot. */
 	token: string;
 
@@ -105,7 +105,7 @@ export class Client extends Eris.Client implements ClientOptions {
 	commands: Command[] = [];
 
 	/** A list of all registered event listeners. */
-	events: EventListener[] = [];
+	events: EventListener<any>[] = [];
 
 	/**
 	 * The default command, executed if `allowMention` is true and the bot is
@@ -273,7 +273,7 @@ export class Client extends Eris.Client implements ClientOptions {
 	}
 
 	/** Register an EventListener class instance to the client. */
-	addEvent (eventListener: EventListener): this {
+	addEvent<T extends keyof ClientEvents> (eventListener: EventListener<T>): this {
 		this.events.push(eventListener);
 		// The actual function registered as a listener calls the instance's
 		// registered function with the context object as the last parameter. We
@@ -281,12 +281,12 @@ export class Client extends Eris.Client implements ClientOptions {
 		// the instance was registered via `addDir`/`addFile`, then it will need
 		// to be removed when calling `reloadFiles`).
 		eventListener.computedListener = (...args) => {
-			eventListener.args[1](...args, this.eventContext);
+			eventListener.listener(...args, this.eventContext);
 		};
 		if (eventListener.once) {
-			this.once(eventListener.args[0], eventListener.computedListener);
+			this.once(eventListener.eventName, eventListener.computedListener);
 		} else {
-			this.on(eventListener.args[0], eventListener.computedListener);
+			this.on(eventListener.eventName, eventListener.computedListener);
 		}
 		return this;
 	}
@@ -399,7 +399,7 @@ export class Client extends Eris.Client implements ClientOptions {
 					filenames.push(thing.filename);
 					// If it's an event listener object, remove the listener
 					if (thing instanceof EventListener && thing.computedListener) {
-						this.removeListener(thing.args[0], thing.computedListener);
+						this.off(thing.args[0], thing.computedListener);
 					}
 				}
 			}
@@ -525,13 +525,13 @@ export class Client extends Eris.Client implements ClientOptions {
 	}
 }
 
-export interface ClientEvents<T> extends Eris.ClientEvents<T> {
+export interface ClientEvents extends Eris.ClientEvents {
 	/**
 	 * @event
 	 * Fired when a command is loaded.
 	 * @param command The command that was loaded
 	 */
-	(event: 'commandLoaded', listener: (cmd: Command) => void): T;
+	commandLoaded: [cmd: Command];
 	/**
 	 * @event
 	 * Fired just before a command has its requirements evaluated on an
@@ -541,7 +541,7 @@ export interface ClientEvents<T> extends Eris.ClientEvents<T> {
 	 * @param args The arguments passed to the command handler
 	 * @param context The context object for the command
 	 */
-	(event: 'preCommand', listener: (cmd: Command, msg: Eris.Message, args: string[], ctx: CommandContext) => void): T;
+	preCommand: [cmd: Command, msg: Eris.Message, args: string[], ctx: CommandContext];
 	/**
 	 * @event
 	 * Fired after a command is executed.
@@ -550,7 +550,7 @@ export interface ClientEvents<T> extends Eris.ClientEvents<T> {
 	 * @param args The arguments passed to the command handler
 	 * @param context The context object for the command
 	 */
-	(event: 'postCommand', listener: (cmd: Command, msg: Eris.Message, args: string[], ctx: CommandContext) => void): T;
+	postCommand: [cmd: Command, msg: Eris.Message, args: string[], ctx: CommandContext];
 	/**
 	 * @event
 	 * Fired if a message starts with a command but no valid command is found
@@ -559,9 +559,15 @@ export interface ClientEvents<T> extends Eris.ClientEvents<T> {
 	 * @param args The arguments passed to the command handler
 	 * @param context The context object for the command
 	 */
-	(event: 'invalidCommand', listener: (msg: Eris.Message, args: string[], ctx: CommandContext) => void): T;
+	invalidCommand: [msg: Eris.Message, args: string[], ctx: CommandContext];
 }
 
 export declare interface Client extends Eris.Client {
-	on: ClientEvents<this>;
+	// https://github.com/abalabahaha/eris/blob/53da0d5111cb884bffd2f2c1d0d5674a98558c26/index.d.ts#L1891-L1896
+    on<K extends keyof ClientEvents>(event: K, listener: (...args: ClientEvents[K]) => void): this;
+    on(event: string, listener: (...args: any[]) => void): this;
+    once<K extends keyof ClientEvents>(event: K, listener: (...args: ClientEvents[K]) => void): this;
+    once(event: string, listener: (...args: any[]) => void): this;
+    off<K extends keyof ClientEvents>(event: K, listener: (...args: ClientEvents[K]) => void): this;
+    off(event: string, listener: (...args: any[]) => void): this;
 }
